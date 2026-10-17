@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "jobId": "11111111-1111-1111-1111-111111111111",
+  "attemptId": "22222222-2222-2222-2222-222222222222",
+  "serverId": null,
+  "modes": ["Introduction", "Credits"],
+  "items": [{ "itemId": "33333333-3333-3333-3333-333333333333", "mediaSourceKey": "example-series-s01e01", "sourcePath": "C:\\Media\\Example Series\\Season 01\\Episode 01.mkv", "pathMapId": null, "fileVersionToken": "0", "expectedModeRevisions": {}, "seasonKey": "example-series:season-1", "order": 1, "writeTarget": true, "multipart": false, "runtimeTicks": "27000000000", "expectedSignature": null, "chapters": [{ "name": "Opening", "startTicks": "0", "origin": "Authored", "originId": null, "exportRevision": null }] }],
+  "introductionSettings": {},
+  "introductionProfileHash": "",
+  "creditsProfileId": "plex-observed-experimental",
+  "creditsProfileHash": "",
+  "leaseToken": null,
+  "leaseGeneration": 0,
+  "leaseExpiresUtc": null,
+  "offlineContextId": "example-offline-review"
+}

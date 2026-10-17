@@ -1,0 +1,14 @@
+services:
+  worker:
+    image: segmentscanner:local
+    user: "10001:10001"
+    command: ["work", "--config", "/config/worker.json"]
+    volumes:
+      - ../../samples/config.linux.json:/config/worker.json:ro
+      - ./state:/state
+      - ./cache:/cache
+      - ./exports:/exports
+      - /srv/media:/media:ro
+      - ../../models:/app/models:ro
+      - ../../../model_v1.pb:/model_v1.pb:ro
+      - ./ffmpeg:/tools:ro

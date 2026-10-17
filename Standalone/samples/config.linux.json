@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "mode": "Offline",
+  "paths": { "stateDirectory": "/state", "cacheDirectory": "/cache", "ffmpeg": "/tools/ffmpeg", "ffprobe": "/tools/ffprobe", "python": "/opt/venv/bin/python", "inferenceScript": "/app/inference/worker.py", "mappings": [], "allowedMediaRoots": ["/media"] },
+  "resources": { "concurrentJobs": 1, "concurrentFiles": 2, "ffmpegThreads": 2, "inferenceThreads": 2, "maximumTemporaryGigabytes": 10, "processTimeoutSeconds": 1800, "inferenceTimeoutSeconds": 120, "maximumCacheMegabytes": 4096 },
+  "credits": { "profileId": "plex-observed-experimental", "modelManifest": "/app/models/manifests/model-v1.byo.json", "sampleIntervalSeconds": 2, "lookbackFractions": [0.1, 0.15, 0.2], "refinementFramesPerSecond": 4, "startOffsetSeconds": 0, "endOffsetSeconds": 0, "blackOnlyFallback": false, "decisionProfile": { "id": "plex-observed-experimental", "featureVersion": "1", "productionApproved": false, "evaluationReportHash": null, "minimumPositiveSamples": 4, "minimumSpanSeconds": 6, "maximumBlankGapSeconds": 2, "minimumTextFraction": 0.002, "minimumTextWidth": 0.2, "minimumTextHeight": 0.08, "subtitleBandStart": 0.78, "nearBlackRatio": 0.98, "staticDifferenceThreshold": 1 } },
+  "exports": { "enabled": false, "writer": "Worker", "xmlLayout": "MsChapterCompatible", "jsonSidecar": true, "preserveUnknownFiles": true, "overwriteModifiedOwnedFiles": false, "mirroredRoot": "/exports" },
+  "server": null
+}

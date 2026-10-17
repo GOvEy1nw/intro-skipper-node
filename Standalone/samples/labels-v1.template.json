@@ -1,0 +1,4 @@
+{
+  "schemaVersion": 1,
+  "items": [{ "itemId": "33333333-3333-3333-3333-333333333333", "mode": "Credits", "mediaSourceKey": "example-series-s01e01", "fileVersionToken": "0", "segments": [{ "startTicks": "24000000000", "endTicks": "27000000000", "startMinimumTicks": "23900000000", "startMaximumTicks": "24100000000", "endMinimumTicks": "26900000000", "endMaximumTicks": "27000000000" }], "programme": [{ "startTicks": "0", "endTicks": "24000000000" }], "category": "example", "split": "held-out" }]
+}

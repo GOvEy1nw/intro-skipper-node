@@ -1,0 +1,24 @@
+# IntroSkipper-Node
+
+IntroSkipper-Node is the remote analysis node for [the Intro Skipper plugin feature branch](https://github.com/GOvEy1nw/intro-skipper/tree/codex/scan-21-remote-analysis-nodes). The `plugin/` submodule pins the canonical plugin and Contracts sources to commit `82237714f832c20299bc993d8724256538aeee56`.
+
+Clone recursively so the shared plugin source is present:
+
+```powershell
+git clone --recurse-submodules https://github.com/GOvEy1nw/intro-skipper-node.git
+cd intro-skipper-node
+git submodule update --init --recursive
+```
+
+Build and test from the repository root:
+
+```powershell
+dotnet restore Standalone/SegmentScanner.sln --locked-mode -p:StandaloneBuild=true
+dotnet build Standalone/SegmentScanner.sln -c Release --no-restore -p:StandaloneBuild=true -p:SkipWebBuild=true
+dotnet test Standalone/tests/SegmentScanner.Tests/SegmentScanner.Tests.csproj -c Release --no-restore -p:StandaloneBuild=true -p:SkipWebBuild=true
+python -m unittest Standalone/scripts/tests/test_export_plex_markers.py
+```
+
+The node scans introductions, credits, recaps, previews and commercials. Credits can use the Original Intro Skipper or Text-aware method. The local settings page contains only connection details and Start/Stop; configure libraries, scan types, credits method, GPU, workers and path mappings centrally in the plugin's **Nodes** settings.
+
+No model weights, media, credentials, private packages or runtime bundles are included. Private all-in-one packaging requires builder-supplied model weights, manifest, FFmpeg/FFprobe and Python/OpenCV inputs.

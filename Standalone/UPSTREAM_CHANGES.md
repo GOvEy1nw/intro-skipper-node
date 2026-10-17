@@ -1,0 +1,16 @@
+# Changes from pinned Intro Skipper
+
+Plugin dependency: [`82237714f832c20299bc993d8724256538aeee56`](https://github.com/GOvEy1nw/intro-skipper/commit/82237714f832c20299bc993d8724256538aeee56), targeting Jellyfin `12.1.0`. The `plugin/` submodule pins this source commit. Original plugin identity is retained; the bridge is an extension of this source fork. See `upstream-lock.json` for dependency identities.
+
+| Area | Change | Server behavior |
+| --- | --- | --- |
+| Analysis environment | Explicit configuration, FFmpeg/FFprobe, chapter and cache-identity inputs replace worker reliance on `Plugin.Instance`. | Existing constructors retain the active-plugin environment. |
+| Introduction analyzer | Shared raw Chromaprint candidates and comparison references are exposed without persistence. Standalone workers can extract fingerprints in parallel before serial matching. Authored chapter discovery and boundary adjustment are reused. | Extraction defaults to serial; existing automatic persistence and analyzer order remain in the server chain. |
+| Detection cache | Portable reads require media and decoder identity as well as policy and stream identity. | Default server cache handling retains legacy acceptance rules. |
+| Remote ownership | The plugin owns each node's library/mode/path scope and detector profile; enabled nodes receive immutable revision-pinned jobs before local analysis. | Each new remote node starts disabled; overlapping scopes have one server-selected owner. None actions and unrelated modes retain their behavior. |
+| Bridge | Protocol-3 elevated bounded HTTP contracts, library catalog, node registration, leases, immutable snapshots, receipts, current revisions and canonical state. | Enablement stays server-controlled; stale node/scope revisions reject claims and publication. Import retains automatic admission and the existing projection transaction. |
+| Database | Remote job/receipt/provenance and node registry tables with generated EF migrations; jobs pin node ID/revision. Existing mutation methods expose a shared transaction context. | Manual rows, tombstones and accepted markers retain protection. Back up before migration; rollback restores the compatible database backup. |
+| Dashboard / standalone settings | Plugin lists named nodes with enable/disable controls and owns library names, scan modes and path pairs. The loopback-only standalone page has only connection and lifecycle controls. | Legacy fields remain only for old held-result review. Library IDs and profile hashes no longer need user entry. |
+| Build | Portable Contracts/Engine/CLI/test projects and locked CPU helper dependencies; standalone builds omit dashboard embedding. | Normal plugin builds still embed the generated dashboard. Plugin archives include `IntroSkipper.dll` and the required `SegmentScanner.Contracts.dll`; signing remains scoped to the plugin assembly. |
+
+Plex-related behavior informs only the experimental credits profile. No Plex binary or proprietary model is bundled, and this is not a Plex compatibility claim. Production approval requires labelled evaluation and known model provenance/licensing.

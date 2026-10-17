@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "modelId": "east-model-v1-user-supplied",
+  "sourceReference": "User-supplied local artifact; provenance and licence are unknown.",
+  "sha256": "9b486f3c3eee77b4c8cc91a83892c37026cca7d29b79bf3b93772ccd2db58454",
+  "distributionStatus": "BringYourOwnModel-SourceUnknown",
+  "productionApproval": false,
+  "modelPath": "../../../model_v1.pb",
+  "format": "TensorFlowFrozenGraph",
+  "inputWidth": 320,
+  "inputHeight": 320,
+  "colorOrder": "RGB",
+  "scale": 1,
+  "mean": [123.68, 116.78, 103.94],
+  "resizePolicy": "Stretch",
+  "outputName": "feature_fusion/Conv_7/Sigmoid",
+  "outputLayout": "NCHW",
+  "outputShape": [1, 1, 80, 80],
+  "geometryOutputSupported": false,
+  "textThreshold": 0.999,
+  "featureVersion": "1",
+  "backend": "Cpu",
+  "runtime": {
+    "python": "3.12.14",
+    "opencv": "opencv-python-headless==4.11.0.86",
+    "numpy": "numpy==2.2.3"
+  }
+}

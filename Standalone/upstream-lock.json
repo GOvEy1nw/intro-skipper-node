@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "introSkipper": {
+    "repository": "https://github.com/GOvEy1nw/intro-skipper",
+    "reference": "82237714f832c20299bc993d8724256538aeee56",
+    "branch": "codex/scan-21-remote-analysis-nodes",
+    "source": "plugin submodule",
+    "releaseBaseline": "Jellyfin 12.1.0; source snapshot based on upstream e39a56b74308bfef95f8d83b4ccdabc1f4529d8a."
+  },
+  "runtime": {
+    "dotnetSdk": "10.0.303",
+    "dotnetRuntime": "10.0.12",
+    "python": "3.12.14",
+    "pythonRequirements": "inference/requirements.lock",
+    "ffmpeg": {
+      "reference": "N-124953-gd30dead35e-20260611",
+      "status": "development reference only; no packaged release is pinned",
+      "licence": "unknown; not inferred by this lock"
+    }
+  },
+  "modelManifest": "models/manifests/model-v1.byo.json"
+}
