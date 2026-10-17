@@ -1,6 +1,6 @@
 # Connected Jellyfin setup
 
-Use the matching IntroSkipper-Node bridge and worker for Jellyfin 12.1. New work uses protocol 3 at `/IntroSkipper/Remote/v3`; upgrade both components together. Existing accepted markers and CPU detector identities are retained.
+Use the matching IntroSkipper-Node bridge and worker for Jellyfin 12.2.0 or newer. The current upstream-integrated bridge cannot load on 12.1; keep its earlier matching build until the server is upgraded. New work uses protocol 3 at `/IntroSkipper/Remote/v3`; upgrade both components together. Existing accepted markers and CPU detector identities are retained.
 
 ## Upgrade the bridge
 

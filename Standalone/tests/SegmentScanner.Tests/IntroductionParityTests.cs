@@ -44,7 +44,7 @@ public sealed class IntroductionParityTests : IDisposable
         var media = new ResolvedMedia(item, item.SourcePath, signature, [], 0);
         var chapters = item.Chapters.Where(c => c.Origin == ChapterOrigin.Authored).Select(c => new ChapterInfo { Name = c.Name, StartPositionTicks = c.StartTicks }).ToList();
         var environment = new ExplicitAnalysisEnvironment(configuration, "must-not-run", _ => chapters);
-        var episode = new QueuedEpisode { EpisodeId = item.ItemId, Path = item.SourcePath, Duration = 240 };
+        var episode = new QueuedEpisode { EpisodeId = item.ItemId, Path = item.SourcePath, Duration = 240, Chapters = chapters };
         var raw = Assert.Single(new ChapterAnalyzer(NullLogger<ChapterAnalyzer>.Instance, null!, null!, configuration, environment: environment)
             .FindChapterCandidates(episode, UpstreamMode.Introduction));
         var adjusted = await new TimeAdjustmentHelper(NullLogger.Instance, configuration, UpstreamMode.Introduction, null!, environment)

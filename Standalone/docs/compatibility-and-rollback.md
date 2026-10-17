@@ -1,6 +1,6 @@
 # Compatibility and rollback
 
-The development target is Jellyfin `12.1` with Intro Skipper `12.0.5.8`, whose package reference resolves to `12.1.0`. The earlier S05 bridge trial completed authenticated scans and twelve accepted credits imports. Playback testing was waived by the user. The node-configuration update has separate local evidence and still requires paired installation and live acceptance.
+The current source target is Jellyfin `12.2.0`, following the integrated upstream `12.0` branch. This bridge cannot load on Jellyfin `12.1`; retain the earlier matching build there. The earlier S05 trial on Jellyfin `12.1` with Intro Skipper `12.0.5.8` completed authenticated scans and twelve accepted credits imports. Playback testing was waived by the user. The upstream integration has build and regression evidence and still requires paired installation and live acceptance on a compatible server.
 
 Build the bridge with `dotnet build plugin/IntroSkipper/IntroSkipper.csproj -c Release`, preserving the normal dashboard build. Deploy both `IntroSkipper.dll` and `SegmentScanner.Contracts.dll` from `plugin/IntroSkipper/bin/Release/net10.0` using the server's normal plugin installation procedure. A standalone build deliberately omits the embedded dashboard and must not be used as the installed plugin. Existing plugin identity is retained; installing this fork replaces that plugin implementation and applies its remote-analysis database migration. Local development artifacts are unsigned and have not been installed.
 

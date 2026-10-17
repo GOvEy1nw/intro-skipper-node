@@ -341,6 +341,9 @@ public sealed class IntroSkipperCreditsDetector(WorkerConfiguration configuratio
             EpisodeId = item.ItemId,
             Path = media.Path,
             Name = item.MediaSourceKey,
+            Chapters = media.Item.Chapters
+                .Where(chapter => chapter.Origin is ChapterOrigin.Authored or ChapterOrigin.UserReviewed)
+                .Select(chapter => new ChapterInfo { Name = chapter.Name, StartPositionTicks = chapter.StartTicks }).ToList(),
             SeriesName = item.SeasonKey,
             EpisodeNumber = item.Order,
             Category = item.IsMovie ? QueuedMediaCategory.Movie : QueuedMediaCategory.Episode,

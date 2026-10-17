@@ -255,6 +255,9 @@ public sealed class PluginModeDetector(WorkerConfiguration configuration)
             EpisodeId = item.ItemId,
             Path = media.Path,
             Name = item.MediaSourceKey,
+            Chapters = media.Item.Chapters
+                .Where(chapter => chapter.Origin is ChapterOrigin.Authored or ChapterOrigin.UserReviewed)
+                .Select(chapter => new ChapterInfo { Name = chapter.Name, StartPositionTicks = chapter.StartTicks }).ToList(),
             Category = item.IsMovie ? QueuedMediaCategory.Movie : item.IsAnime ? QueuedMediaCategory.AnimeEpisode : QueuedMediaCategory.Episode,
             SeasonNumber = item.SeasonNumber ?? (item.IsMovie ? 0 : 1),
             EpisodeNumber = item.EpisodeNumber ?? (item.Order + 1),
@@ -292,7 +295,8 @@ public sealed class PluginModeDetector(WorkerConfiguration configuration)
         }).ToList();
         var reviewReason = action == AnalyzerAction.None ? "PluginModeDisabled"
             : episode.GetAnalyzed(ToUpstreamMode(mode)) == EpisodeState.AnalysisFailed ? "PluginAnalysisFailed"
-            : episode.HasUnresolvedSubtitleDetection(ToUpstreamMode(mode)) ? "UnresolvedSubtitleDetection"
+            : episode.GetSubtitleOutcome(ToUpstreamMode(mode)) == SubtitleOutcome.Unresolved ? "UnresolvedSubtitleDetection"
+            : candidates.Count == 0 && episode.GetSubtitleOutcome(ToUpstreamMode(mode)) == SubtitleOutcome.Rejected ? "RejectedSubtitleDetection"
             : hasUnresolvedReference ? "UnresolvedSeasonComparisonMedia"
             : HasUnknownChapterDependency(item, mode, configuration, action) ? "UnknownChapterDependency"
             : episode.GetAnalyzed(ToUpstreamMode(mode)) == EpisodeState.NotAnalyzed ? "UnresolvedPluginAnalysis"

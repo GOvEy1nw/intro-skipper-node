@@ -161,7 +161,7 @@ Real Edge interaction with an isolated bridge fixture verified the 2 default, na
 
 - Confirm/correct real-media boundaries and evaluate a representative held-out corpus, including ordinary text, subtitle, slate, animation, multiple-credit-block, and no-credit cases.
 - Establish the model's source and redistribution licence. Its SHA-256 is `9b486f3c3eee77b4c8cc91a83892c37026cca7d29b79bf3b93772ccd2db58454`; its current manifest is experimental and unapproved.
-- Install the compatible bridge on an isolated Jellyfin 12.1 / Intro Skipper 12.0.5.8 instance, then verify authentication, claim/heartbeat/import, canonical export, projection, restart recovery, and actual playback.
+- Install the matching upstream-integrated bridge on an isolated Jellyfin 12.2.0 instance, then verify authentication, claim/heartbeat/import, canonical export, projection and restart recovery. The earlier 12.1 trial is historical evidence for its matching build.
 - Verify Windows Scheduled Task installation and unattended access under the intended account, or validate the intended Linux mounts and permissions.
 
 Jellyfin's current chapter API does not provide authorship provenance. Remote results that depend on unknown chapter input remain held for review. They cannot become automatically accepted solely because the model or audio matcher succeeded.

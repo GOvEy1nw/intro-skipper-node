@@ -143,6 +143,7 @@ public sealed class IntroductionDetector
             _configuration.Paths.Ffprobe,
             itemId => cacheIdentities.GetValueOrDefault(itemId));
         var queued = orderedItems.Select(item => ToQueuedEpisode(item, media[item.ItemId], configuration)).ToList();
+        foreach (var episode in queued) episode.Chapters = chapters[episode.EpisodeId];
         var targets = queued.Where(episode => writeTargets.Any(item => item.ItemId == episode.EpisodeId)).ToList();
         var cache = CreateCacheService(environment);
         var ffmpeg = new FFmpegService(NullLogger<FFmpegService>.Instance, cache, null, null, environment);

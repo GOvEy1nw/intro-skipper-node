@@ -49,6 +49,30 @@ public sealed class PluginModeTests : IDisposable
     }
 
     [Fact]
+    public async Task SubtitleRecapWithoutReliableEndIsHeldInsteadOfClearingMarkers()
+    {
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, "episode.mkv");
+        await ProcessRunner.RunAsync("ffmpeg", ["-v", "error", "-f", "lavfi", "-i", "color=black:size=160x90:rate=5:duration=3", "-an", "-c:v", "mpeg4", path], 30, CancellationToken.None);
+        await File.WriteAllTextAsync(Path.ChangeExtension(path, ".en.srt"), "1\n00:00:01,000 --> 00:00:02,000\nPreviously on\n");
+        var configuration = new PluginConfiguration
+        {
+            EnableSubtitleRecapDetection = true,
+            ChapterAnalyzerRecapPattern = string.Empty,
+            EnableSponsorBlockChapterDetection = false,
+            DetectRecapUsingBlackFrames = false,
+            MinimumRecapDuration = 60,
+        };
+        var item = Item(context: [new ContextSegment(RemoteAnalysisMode.Introduction, TimeSpan.FromSeconds(100).Ticks, TimeSpan.FromSeconds(120).Ticks)]) with { SourcePath = path };
+
+        var result = Assert.Single(await Detector().AnalyzeAsync(Job(item, RemoteAnalysisMode.Recap, configuration), [Media(item)], RemoteAnalysisMode.Recap, CancellationToken.None));
+
+        Assert.Equal(AnalysisStatus.NeedsReview, result.Status);
+        Assert.Empty(result.Segments);
+        Assert.Contains("RejectedSubtitleDetection", result.Warnings);
+    }
+
+    [Fact]
     public async Task AnimePreviewDerivesFromCreditsContextWhenNoSubtitleOrChapterWins()
     {
         var configuration = new PluginConfiguration { AnimePreviewFromCreditsEnd = true };
