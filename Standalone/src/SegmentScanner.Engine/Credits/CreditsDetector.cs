@@ -17,8 +17,9 @@ public sealed class CreditsDetector(WorkerConfiguration configuration)
     private const string DecoderPolicy = "source-pts-display-aspect-sdr-320-increase-v3-av1-no-grain";
     private const string NonAv1DecoderPolicy = "source-pts-display-aspect-sdr-320-increase-v2";
 
-    public async Task<AnalysisResult> AnalyzeAsync(JobSnapshot job, ResolvedMedia media, InferenceHelper helper, CancellationToken cancellationToken, bool trimCache = true)
+    public async Task<AnalysisResult> AnalyzeAsync(JobSnapshot job, ResolvedMedia media, InferenceHelper helper, CancellationToken cancellationToken, bool trimCache = true, QueueActivityCollector? activity = null)
     {
+        using var scope = activity?.Begin(media.Item.ItemId, RemoteAnalysisMode.Credits, "TextCredits");
         var identity = new DetectorIdentity { Id = configuration.Credits.ProfileId, ProfileHash = ProfileHash(), ModelSha256 = helper.ModelSha256,
             InferenceEnvironment = helper.EnvironmentIdentity, ProductionApproved = false };
         var result = ResultFactory.Create(job, media.Item, RemoteAnalysisMode.Credits, AnalysisStatus.NeedsReview, identity, media);

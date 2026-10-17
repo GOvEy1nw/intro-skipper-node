@@ -17,7 +17,7 @@ public sealed class ScanService(WorkerConfiguration configuration, WorkerStore s
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
     };
 
-    public async Task<ResultBundle> ScanAsync(JobSnapshot job, CancellationToken cancellationToken)
+    public async Task<ResultBundle> ScanAsync(JobSnapshot job, CancellationToken cancellationToken, QueueActivityCollector? activity = null)
     {
         ContractValidation.Job(job);
         var effectiveConfiguration = ConfigurationFor(job);
@@ -47,7 +47,7 @@ public sealed class ScanService(WorkerConfiguration configuration, WorkerStore s
         {
             try
             {
-                var resolved = await new MediaProbe(effectiveConfiguration).ProbeAsync(item, cancellationToken).ConfigureAwait(false);
+                var resolved = await new MediaProbe(effectiveConfiguration).ProbeAsync(item, cancellationToken, activity, job.Modes[0]).ConfigureAwait(false);
                 media.Add(MediaProbe.ApplyGeneratedChapterGuard(resolved, store.HasChapterExport(job.ServerId, item)));
             }
             catch (Exception exception) when (exception is IOException or InvalidDataException or NotSupportedException or System.ComponentModel.Win32Exception)
@@ -64,7 +64,7 @@ public sealed class ScanService(WorkerConfiguration configuration, WorkerStore s
         if (job.Modes.Contains(RemoteAnalysisMode.Introduction) && media.Count > 0)
         {
             var availableJob = job with { Items = media.Select(m => m.Item).ToList() };
-            var introductions = await new IntroductionDetector(effectiveConfiguration).AnalyzeAsync(availableJob, media, cancellationToken).ConfigureAwait(false);
+            var introductions = await new IntroductionDetector(effectiveConfiguration).AnalyzeAsync(availableJob, media, cancellationToken, activity).ConfigureAwait(false);
             var unavailableSeasons = job.Items.Where(i => !media.Any(m => m.Item.ItemId == i.ItemId)).Select(i => i.SeasonKey).ToHashSet(StringComparer.Ordinal);
             for (var index = 0; index < introductions.Count; index++)
                 if (introductions[index].Status == AnalysisStatus.CompletedNoSegments && unavailableSeasons.Contains(job.Items.Single(i => i.ItemId == introductions[index].ItemId).SeasonKey))
@@ -74,13 +74,13 @@ public sealed class ScanService(WorkerConfiguration configuration, WorkerStore s
         }
         foreach (var mode in job.Modes.Where(mode => mode is RemoteAnalysisMode.Recap or RemoteAnalysisMode.Preview or RemoteAnalysisMode.Commercial))
         {
-            var pluginResults = await new PluginModeDetector(effectiveConfiguration).AnalyzeAsync(job, media, mode, cancellationToken).ConfigureAwait(false);
+            var pluginResults = await new PluginModeDetector(effectiveConfiguration).AnalyzeAsync(job, media, mode, cancellationToken, activity).ConfigureAwait(false);
             results.AddRange(pluginResults);
             store.SaveProposals(pluginResults);
         }
         if (job.Modes.Contains(RemoteAnalysisMode.Credits) && effectiveConfiguration.Credits.Method == CreditsDetectionMethod.IntroSkipper)
         {
-            var original = await new IntroSkipperCreditsDetector(effectiveConfiguration).AnalyzeAsync(job, media, cancellationToken).ConfigureAwait(false);
+            var original = await new IntroSkipperCreditsDetector(effectiveConfiguration).AnalyzeAsync(job, media, cancellationToken, activity).ConfigureAwait(false);
             results.AddRange(original);
             store.SaveProposals(original);
         }
@@ -119,7 +119,7 @@ public sealed class ScanService(WorkerConfiguration configuration, WorkerStore s
                                 try
                                 {
                                     result = helper is null ? Failure(item, dependencyFailure ?? "Inference unavailable.")
-                                        : await detector.AnalyzeAsync(job, item, helper, stopped.Token, trimCache: false).ConfigureAwait(false);
+                                        : await detector.AnalyzeAsync(job, item, helper, stopped.Token, trimCache: false, activity: activity).ConfigureAwait(false);
                                 }
                                 catch (Exception exception) when (exception is IOException or InvalidDataException or System.ComponentModel.Win32Exception)
                                 { result = Failure(item, exception.Message); }
@@ -154,6 +154,16 @@ public sealed class ScanService(WorkerConfiguration configuration, WorkerStore s
         }
         foreach (var result in results) ContractValidation.Result(result);
         store.SaveProposals(results);
+        if (activity is not null)
+        {
+            foreach (var item in job.Items)
+            {
+                if (job.Modes.All(mode => results.Any(result => result.ItemId == item.ItemId && result.Mode == mode)))
+                {
+                    activity.Complete(item.ItemId);
+                }
+            }
+        }
         return new ResultBundle { Results = results };
     }
 

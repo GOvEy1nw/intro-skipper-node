@@ -7,7 +7,8 @@ using SegmentScanner.Engine.Persistence;
 namespace SegmentScanner.Engine.Jellyfin;
 
 public sealed class ConnectedWorker(WorkerConfiguration configuration, WorkerStore store, string? credential = null,
-    Action<WorkerConnectionStatus>? statusChanged = null)
+    Action<WorkerConnectionStatus>? statusChanged = null,
+    Func<JobSnapshot, QueueActivityCollector, CancellationToken, Task<ResultBundle>>? scan = null)
 {
     private readonly object statusLock = new();
     private WorkerConnectionStatus? lastStatus;
@@ -78,27 +79,41 @@ public sealed class ConnectedWorker(WorkerConfiguration configuration, WorkerSto
                             }
 
                             ValidateJob(job, nodeConfiguration, capabilities.ServerId);
+                            using var jobCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                            var activity = new QueueActivityCollector();
+                            var cancelledByServer = 0;
                             using var heartbeatCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                            var heartbeat = HeartbeatLoopAsync(client, job, nodeConfiguration.Node.Enabled, heartbeatCancellation.Token);
+                            var heartbeat = client.SupportsQueueControl
+                                ? QueueControlLoopAsync(client, job, nodeConfiguration.Node.Enabled, activity, jobCancellation, () => Interlocked.Exchange(ref cancelledByServer, 1), heartbeatCancellation.Token)
+                                : HeartbeatLoopAsync(client, job, nodeConfiguration.Node.Enabled, heartbeatCancellation.Token);
                             ReportStatus(connected: true, scanning: true, nodeEnabled: nodeConfiguration.Node.Enabled, error: null);
                             try
                             {
-                                var result = await new ScanService(configuration, store).ScanAsync(job, cancellationToken).ConfigureAwait(false);
+                                var result = await ScanAsync(job, activity, jobCancellation.Token).ConfigureAwait(false);
+                                jobCancellation.Token.ThrowIfCancellationRequested();
                                 var output = Path.Combine(configuration.Paths.StateDirectory, "results", $"{job.JobId:D}-{job.AttemptId:D}.json");
                                 AtomicFile.Write(output, WireJson.Write(result));
                                 await Console.Error.WriteLineAsync(WireJson.Write(new { eventName = "ScanResult", jobId = job.JobId, path = output })).ConfigureAwait(false);
                                 var submission = new PendingSubmission(job, result.Results);
                                 store.SaveSubmission(submission);
-                                await PublishAsync(client, submission, cancellationToken).ConfigureAwait(false);
+                                await PublishAsync(client, submission, jobCancellation.Token).ConfigureAwait(false);
+                            }
+                            catch (OperationCanceledException) when (jobCancellation.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+                            {
+                                // A queue-control conflict invalidates this lease; continue serving later jobs.
                             }
                             finally
                             {
                                 await heartbeatCancellation.CancelAsync().ConfigureAwait(false);
                                 try { await heartbeat.ConfigureAwait(false); } catch (OperationCanceledException) { }
+                                if (Volatile.Read(ref cancelledByServer) != 0) store.RemoveSubmission(job.JobId);
                                 ReportStatus(ScanningFinished(nodeConfiguration.Node.Enabled));
-                                using var releaseTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                                try { await client.ReleaseAsync(job, releaseTimeout.Token).ConfigureAwait(false); } catch (HttpRequestException) { }
-                                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { }
+                                if (Volatile.Read(ref cancelledByServer) == 0)
+                                {
+                                    using var releaseTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                                    try { await client.ReleaseAsync(job, releaseTimeout.Token).ConfigureAwait(false); } catch (HttpRequestException) { }
+                                    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { }
+                                }
                             }
                         }
                     }
@@ -119,6 +134,11 @@ public sealed class ConnectedWorker(WorkerConfiguration configuration, WorkerSto
         }
         finally { ReportStatus(connected: false, scanning: false, nodeEnabled: null, error: null); }
     }
+
+    private Task<ResultBundle> ScanAsync(JobSnapshot job, QueueActivityCollector activity, CancellationToken token)
+        => scan is null
+            ? new ScanService(configuration, store).ScanAsync(job, token, activity)
+            : scan(job, activity, token);
 
     private async Task WaitForPollOrSettingsAsync(Task<bool> settingsNotice, DateTimeOffset nextPresenceUtc, CancellationToken token)
     {
@@ -251,6 +271,38 @@ public sealed class ConnectedWorker(WorkerConfiguration configuration, WorkerSto
             {
                 ReportStatus(connected: false, scanning: true, nodeEnabled, error: "Jellyfin is unavailable.");
                 // Computation can finish offline; publication still rechecks the lease.
+            }
+        }
+    }
+
+    private async Task QueueControlLoopAsync(
+        RemoteClient client,
+        JobSnapshot job,
+        bool nodeEnabled,
+        QueueActivityCollector activity,
+        CancellationTokenSource jobCancellation,
+        Action cancelJob,
+        CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(2), token).ConfigureAwait(false);
+            var snapshot = activity.Snapshot();
+            try
+            {
+                await client.ProgressAsync(job, snapshot.Active, snapshot.Completed, token).ConfigureAwait(false);
+                ReportStatus(connected: true, scanning: true, nodeEnabled, error: null);
+            }
+            catch (HttpRequestException exception) when (exception.StatusCode is HttpStatusCode.Conflict or HttpStatusCode.Gone)
+            {
+                cancelJob();
+                await jobCancellation.CancelAsync().ConfigureAwait(false);
+                return;
+            }
+            catch (HttpRequestException)
+            {
+                ReportStatus(connected: false, scanning: true, nodeEnabled, error: "Jellyfin is unavailable.");
+                // Preserve the current lease boundary while the bridge is transiently unavailable.
             }
         }
     }

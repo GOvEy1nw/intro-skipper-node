@@ -2,13 +2,15 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.Json;
 using SegmentScanner.Contracts;
+using SegmentScanner.Engine;
 
 namespace SegmentScanner.Engine.Media;
 
 public sealed class MediaProbe(WorkerConfiguration configuration)
 {
-    public async Task<ResolvedMedia> ProbeAsync(JobItem item, CancellationToken cancellationToken)
+    public async Task<ResolvedMedia> ProbeAsync(JobItem item, CancellationToken cancellationToken, QueueActivityCollector? activity = null, RemoteAnalysisMode? mode = null)
     {
+        using var scope = activity is null || mode is null ? null : activity.Begin(item.ItemId, mode.Value, "Probe");
         if (item.Multipart) throw new NotSupportedException("Multipart/stacked sources are unsupported.");
         var path = new PathMapper(configuration.Paths).Resolve(item.SourcePath, item.PathMapId);
         var before = await FileIdentityAsync(path, cancellationToken).ConfigureAwait(false);

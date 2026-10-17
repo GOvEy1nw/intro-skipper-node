@@ -44,7 +44,8 @@ public sealed class PluginModeDetector(WorkerConfiguration configuration)
         JobSnapshot job,
         IReadOnlyList<ResolvedMedia> media,
         RemoteAnalysisMode mode,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        QueueActivityCollector? activity = null)
     {
         configuration.Validate();
         ContractValidation.Job(job);
@@ -100,7 +101,8 @@ public sealed class PluginModeDetector(WorkerConfiguration configuration)
                 configuration.Paths.Ffmpeg,
                 itemId => Chapters(mediaByItem, itemId),
                 configuration.Paths.Ffprobe,
-                itemId => cacheIdentities.GetValueOrDefault(itemId));
+                itemId => cacheIdentities.GetValueOrDefault(itemId),
+                trackItem: activity is null ? null : activity.TrackItem);
             var cache = CreateCache(environment);
             var ffmpeg = new FFmpegService(NullLogger<FFmpegService>.Instance, cache, null, null, environment);
             var database = new IntroSkipperDatabase(new SegmentFactory(Path.Combine(scratch, "segments.db")), NullLogger<IntroSkipperDatabase>.Instance);

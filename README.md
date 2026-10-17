@@ -1,6 +1,6 @@
 # IntroSkipper-Node
 
-IntroSkipper-Node is the remote analysis node for [the Intro Skipper plugin feature branch](https://github.com/GOvEy1nw/intro-skipper/tree/codex/scan-21-remote-analysis-nodes). The `plugin/` submodule pins the canonical plugin and Contracts sources to commit `2b7d1e80f189218224a65dfe099342f649cc567c`. This branch follows upstream's Jellyfin **12.2.0** minimum server version.
+IntroSkipper-Node is the remote analysis node for [the Intro Skipper plugin feature branch](https://github.com/GOvEy1nw/intro-skipper/tree/codex/scan-21-remote-analysis-nodes). The `plugin/` submodule pins the canonical plugin and Contracts sources to commit `335ad052f06b4ec2a8a87d6c504bcc73d725ab14`. This branch follows upstream's Jellyfin **12.2.0** minimum server version.
 
 Clone recursively so the shared plugin source is present:
 

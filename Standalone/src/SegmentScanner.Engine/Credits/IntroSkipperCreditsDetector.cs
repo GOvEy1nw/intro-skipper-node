@@ -75,7 +75,8 @@ public sealed class IntroSkipperCreditsDetector(WorkerConfiguration configuratio
     public async Task<List<AnalysisResult>> AnalyzeAsync(
         JobSnapshot job,
         IReadOnlyList<ResolvedMedia> media,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        QueueActivityCollector? activity = null)
     {
         configuration.Validate();
         ContractValidation.Job(job);
@@ -151,7 +152,8 @@ public sealed class IntroSkipperCreditsDetector(WorkerConfiguration configuratio
                 configuration.Paths.Ffprobe,
                 itemId => cacheIdentities.GetValueOrDefault(itemId),
                 videoDecoder,
-                itemId => VideoInfo(mediaByItem, itemId));
+                itemId => VideoInfo(mediaByItem, itemId),
+                trackItem: activity is null ? null : activity.TrackItem);
             var cache = CreateCache(environment);
             var ffmpeg = new FFmpegService(NullLogger<FFmpegService>.Instance, cache, null, null, environment);
             var database = new IntroSkipperDatabase(new SegmentFactory(Path.Combine(scratch, "segments.db")), NullLogger<IntroSkipperDatabase>.Instance);
@@ -195,11 +197,11 @@ public sealed class IntroSkipperCreditsDetector(WorkerConfiguration configuratio
                     var handledChapters = await pass.SettleChaptersAsync(queue, action, chromaprintAvailable, cancellationToken).ConfigureAwait(false);
                     if (availableTargets.Any(item => !handledChapters.Contains(item.ItemId)))
                     {
-                        await ProbeAudioWindowsAsync(available, episodes, ffmpeg, pluginConfiguration, cancellationToken).ConfigureAwait(false);
+                        await ProbeAudioWindowsAsync(available, episodes, ffmpeg, pluginConfiguration, cancellationToken, activity).ConfigureAwait(false);
                     }
                     try
                     {
-                        await PrefetchAsync(queue, availableTargets.Select(item => item.ItemId).ToHashSet(), handledChapters, action, chromaprintAvailable, ffmpeg, pluginConfiguration, configuration.Resources.ConcurrentFiles, cancellationToken).ConfigureAwait(false);
+                        await PrefetchAsync(queue, availableTargets.Select(item => item.ItemId).ToHashSet(), handledChapters, action, chromaprintAvailable, ffmpeg, pluginConfiguration, configuration.Resources.ConcurrentFiles, cancellationToken, activity).ConfigureAwait(false);
                     }
                     catch (Exception) when (!cancellationToken.IsCancellationRequested)
                     {
@@ -358,7 +360,8 @@ public sealed class IntroSkipperCreditsDetector(WorkerConfiguration configuratio
         IReadOnlyDictionary<Guid, QueuedEpisode> episodes,
         IFFmpegService ffmpeg,
         PluginConfiguration configuration,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        QueueActivityCollector? activity)
     {
         if (!configuration.ProbeAudioDuration)
         {
@@ -368,6 +371,7 @@ public sealed class IntroSkipperCreditsDetector(WorkerConfiguration configuratio
         foreach (var item in targets)
         {
             var episode = episodes[item.ItemId];
+            using var scope = activity?.Begin(item.ItemId, RemoteAnalysisMode.Credits, "AudioProbe");
             var audioDuration = await ffmpeg.ProbeAudioDurationAsync(episode.Path, cancellationToken).ConfigureAwait(false);
             if (audioDuration is not { } duration || duration <= 0)
             {
@@ -389,7 +393,8 @@ public sealed class IntroSkipperCreditsDetector(WorkerConfiguration configuratio
         IFFmpegService ffmpeg,
         PluginConfiguration configuration,
         int concurrentFiles,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        QueueActivityCollector? activity)
     {
         var unhandledTargets = episodes.Where(episode => targetIds.Contains(episode.EpisodeId) && !handledChapters.Contains(episode.EpisodeId)).ToList();
         if (unhandledTargets.Count == 0)
@@ -408,11 +413,13 @@ public sealed class IntroSkipperCreditsDetector(WorkerConfiguration configuratio
         {
             if (fingerprintIds.Contains(episode.EpisodeId))
             {
+                using var scope = activity?.Begin(episode.EpisodeId, RemoteAnalysisMode.Credits, "CreditsFingerprintPrefetch");
                 _ = await ffmpeg.FingerprintAsync(episode, UpstreamAnalysisMode.Credits, token).ConfigureAwait(false);
             }
 
             if (keyframeIds.Contains(episode.EpisodeId))
             {
+                using var scope = activity?.Begin(episode.EpisodeId, RemoteAnalysisMode.Credits, "CreditsKeyframePrefetch");
                 _ = await ffmpeg.ScanKeyframesAsync(episode, configuration.BlackFrameThreshold, token).ConfigureAwait(false);
             }
         }).ConfigureAwait(false);

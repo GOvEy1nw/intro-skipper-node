@@ -60,6 +60,37 @@ public sealed class SafetyContractTests : IDisposable
     }
 
     [Fact]
+    public void QueueActivityScopesCompleteExplicitlyAndResetWhenReentered()
+    {
+        var collector = new QueueActivityCollector();
+        var itemId = Guid.NewGuid();
+        using (collector.Begin(itemId, RemoteAnalysisMode.Credits, "TextCredits"))
+        {
+            var snapshot = collector.Snapshot();
+            Assert.Equal(itemId, Assert.Single(snapshot.Active).ItemId);
+            Assert.Empty(snapshot.Completed);
+        }
+
+        var inactive = collector.Snapshot();
+        Assert.Empty(inactive.Active);
+        Assert.Empty(inactive.Completed);
+
+        collector.Complete(itemId);
+        Assert.Equal(itemId, Assert.Single(collector.Snapshot().Completed));
+
+        using (collector.Begin(itemId, RemoteAnalysisMode.Credits, "Keyframes"))
+        {
+            var reentered = collector.Snapshot();
+            Assert.Equal(itemId, Assert.Single(reentered.Active).ItemId);
+            Assert.Empty(reentered.Completed);
+        }
+
+        var disposed = collector.Snapshot();
+        Assert.Empty(disposed.Active);
+        Assert.Empty(disposed.Completed);
+    }
+
+    [Fact]
     public void Result_AcceptsSignedFileVersionTokenButRejectsInvalidTokensAndNegativeRevision()
     {
         var signed = Result() with { FileVersionToken = long.MinValue.ToString(System.Globalization.CultureInfo.InvariantCulture) };
@@ -74,9 +105,11 @@ public sealed class SafetyContractTests : IDisposable
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task RemoteHandshakeAuthenticatesWithoutLegacyTokenHeaders(bool validCredential)
+    [InlineData(true, "12.1.0", true)]
+    [InlineData(true, "12.2.0", true)]
+    [InlineData(true, "12.3.0", false)]
+    [InlineData(false, "12.1.0", false)]
+    public async Task RemoteHandshakeAuthenticatesWithoutLegacyTokenHeaders(bool validCredential, string serverVersion, bool supportedServer)
     {
         const string token = "local-handshake-test-key";
         var variable = "SEGMENTSCANNER_TEST_TOKEN_" + Guid.NewGuid().ToString("N");
@@ -84,7 +117,7 @@ public sealed class SafetyContractTests : IDisposable
         using var listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();
         var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        var response = new RemoteCapabilities { ServerId = "test-server", ServerVersion = "12.1.0", PluginVersion = "12.0.5.0", SupportsNodeConfiguration = true };
+        var response = new RemoteCapabilities { ServerId = "test-server", ServerVersion = serverVersion, PluginVersion = "12.0.5.0", SupportsNodeConfiguration = true };
         var server = Task.Run(async () =>
         {
             using var connection = await listener.AcceptTcpClientAsync(timeout.Token);
@@ -111,16 +144,17 @@ public sealed class SafetyContractTests : IDisposable
         try
         {
             using var client = new RemoteClient(new ServerConfiguration { BaseUrl = $"http://127.0.0.1:{port}", CredentialEnvironmentVariable = variable });
-            if (validCredential)
+            if (validCredential && supportedServer)
             {
                 var capabilities = await client.HandshakeAsync(timeout.Token);
                 Assert.Equal("test-server", capabilities.ServerId);
             }
-            else
+            else if (!validCredential)
             {
                 var exception = await Assert.ThrowsAsync<HttpRequestException>(() => client.HandshakeAsync(timeout.Token));
                 Assert.Equal(HttpStatusCode.Unauthorized, exception.StatusCode);
             }
+            else await Assert.ThrowsAsync<InvalidDataException>(() => client.HandshakeAsync(timeout.Token));
 
             var captured = await server;
             Assert.StartsWith("GET /IntroSkipper/Remote/v3/capabilities ", captured.request, StringComparison.Ordinal);

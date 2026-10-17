@@ -59,7 +59,8 @@ public sealed class IntroductionDetector
     public async Task<List<AnalysisResult>> AnalyzeAsync(
         JobSnapshot job,
         IReadOnlyList<ResolvedMedia> media,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        QueueActivityCollector? activity = null)
     {
         ContractValidation.Job(job);
         if (!job.Modes.Contains(RemoteAnalysisMode.Introduction))
@@ -104,7 +105,7 @@ public sealed class IntroductionDetector
 
             try
             {
-                var outcome = await AnalyzeSeasonAsync(job, available, availableWriteTargets, mediaByItem, pluginConfiguration, profileHash, cancellationToken).ConfigureAwait(false);
+                var outcome = await AnalyzeSeasonAsync(job, available, availableWriteTargets, mediaByItem, pluginConfiguration, profileHash, cancellationToken, activity).ConfigureAwait(false);
                 results.AddRange(outcome);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -127,7 +128,8 @@ public sealed class IntroductionDetector
         IReadOnlyDictionary<Guid, ResolvedMedia> media,
         PluginConfiguration configuration,
         string profileHash,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        QueueActivityCollector? activity)
     {
         var chapters = orderedItems.ToDictionary(
             item => item.ItemId,
@@ -141,7 +143,8 @@ public sealed class IntroductionDetector
             _configuration.Paths.Ffmpeg,
             itemId => chapters.TryGetValue(itemId, out var itemChapters) ? itemChapters : [],
             _configuration.Paths.Ffprobe,
-            itemId => cacheIdentities.GetValueOrDefault(itemId));
+            itemId => cacheIdentities.GetValueOrDefault(itemId),
+            trackItem: activity is null ? null : activity.TrackItem);
         var queued = orderedItems.Select(item => ToQueuedEpisode(item, media[item.ItemId], configuration)).ToList();
         foreach (var episode in queued) episode.Chapters = chapters[episode.EpisodeId];
         var targets = queued.Where(episode => writeTargets.Any(item => item.ItemId == episode.EpisodeId)).ToList();

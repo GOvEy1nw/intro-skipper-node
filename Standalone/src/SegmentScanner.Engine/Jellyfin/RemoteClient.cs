@@ -14,6 +14,9 @@ public sealed class RemoteClient : IDisposable
     private readonly HttpClient client;
     private readonly ServerConfiguration configuration;
 
+    /// <summary>Gets whether the most recent capabilities response opts into queue control.</summary>
+    public bool SupportsQueueControl { get; private set; }
+
     public RemoteClient(WorkerConfiguration configuration, string? credential = null)
         : this(configuration.Server ?? throw new InvalidDataException("No server configured."), ResolveCredential(configuration, credential), true)
     {
@@ -43,10 +46,13 @@ public sealed class RemoteClient : IDisposable
 
     public async Task<RemoteCapabilities> HandshakeAsync(CancellationToken cancellationToken)
     {
-        var capabilities = await SendAsync<RemoteCapabilities>(HttpMethod.Get, "capabilities", null, cancellationToken).ConfigureAwait(false)
+        SupportsQueueControl = false;
+        var capabilities = await SendAsync<RemoteCapabilities>(HttpMethod.Get, "capabilities", null, cancellationToken, response =>
+            SupportsQueueControl = response.Headers.TryGetValues("X-IntroSkipper-Queue-Control", out var values)
+                && values.Any(value => string.Equals(value, "1", StringComparison.Ordinal))).ConfigureAwait(false)
             ?? throw new InvalidDataException("Missing remote bridge capabilities.");
-        if (capabilities.ProtocolVersion != 3 || !capabilities.SupportsNodeConfiguration || capabilities.AnalysisContract != "segment-scanner-v1" || !capabilities.ServerVersion.StartsWith("12.1", StringComparison.Ordinal))
-            throw new InvalidDataException("Install the matching node-configuration bridge and worker; this version requires remote protocol 3 on Jellyfin 12.1.");
+        if (capabilities.ProtocolVersion != 3 || !capabilities.SupportsNodeConfiguration || capabilities.AnalysisContract != "segment-scanner-v1" || !SupportsServerVersion(capabilities.ServerVersion))
+            throw new InvalidDataException("Install the matching node-configuration bridge and worker; this version requires remote protocol 3 on Jellyfin 12.1 or 12.2.");
         return capabilities;
     }
 
@@ -121,6 +127,9 @@ public sealed class RemoteClient : IDisposable
 
     public Task<JobSnapshot?> ClaimAsync(CancellationToken token) => SendAsync<JobSnapshot>(HttpMethod.Post, "jobs/claim", new ClaimRequest(configuration.WorkerId), token);
     public Task HeartbeatAsync(JobSnapshot job, CancellationToken token) => SendAsync<object>(HttpMethod.Post, $"jobs/{job.JobId}/heartbeat", new LeaseRequest(job.LeaseToken!, job.LeaseGeneration), token);
+    public async Task ProgressAsync(JobSnapshot job, List<ScannerQueueActivity> active, List<Guid> completed, CancellationToken token)
+        => await SendAsync<object>(HttpMethod.Post, $"jobs/{job.JobId}/progress", new ScannerQueueProgressRequest(
+            new LeaseRequest(job.LeaseToken!, job.LeaseGeneration), active, completed), token).ConfigureAwait(false);
     public Task ReleaseAsync(JobSnapshot job, CancellationToken token) => SendAsync<object>(HttpMethod.Post, $"jobs/{job.JobId}/release", new LeaseRequest(job.LeaseToken!, job.LeaseGeneration), token);
     public async Task<List<ImportReceipt>> SubmitAsync(PendingSubmission submission, CancellationToken token) =>
         await SendAsync<List<ImportReceipt>>(HttpMethod.Post, $"jobs/{submission.Job.JobId}/results", new SubmitRequest(submission.Job.LeaseToken!, submission.Job.LeaseGeneration, submission.Results), token).ConfigureAwait(false) ?? [];
@@ -132,31 +141,32 @@ public sealed class RemoteClient : IDisposable
         await SendAsync<List<RevisionResponse>>(HttpMethod.Post, "results/revisions", new RevisionRequest(itemIds), token).ConfigureAwait(false) ?? [];
     public void Dispose() => client.Dispose();
 
-    private async Task<T?> SendAsync<T>(HttpMethod method, string path, object? body, CancellationToken token) where T : class
-        => await SendV3Async<T>(method, path, body, token).ConfigureAwait(false);
+    private async Task<T?> SendAsync<T>(HttpMethod method, string path, object? body, CancellationToken token, Action<HttpResponseMessage>? responseReceived = null) where T : class
+        => await SendV3Async<T>(method, path, body, token, responseReceived).ConfigureAwait(false);
 
-    private async Task<T?> SendV3Async<T>(HttpMethod method, string path, object? body, CancellationToken token) where T : class
-        => await SendAsync<T>(NodePrefix, method, path, body, token).ConfigureAwait(false);
+    private async Task<T?> SendV3Async<T>(HttpMethod method, string path, object? body, CancellationToken token, Action<HttpResponseMessage>? responseReceived = null) where T : class
+        => await SendAsync<T>(NodePrefix, method, path, body, token, responseReceived).ConfigureAwait(false);
 
     private async Task<T?> SendLegacyAsync<T>(HttpMethod method, string path, object? body, CancellationToken token) where T : class
         => await SendAsync<T>(LegacyPrefix, method, path, body, token).ConfigureAwait(false);
 
-    private async Task<T?> SendAsync<T>(string prefix, HttpMethod method, string path, object? body, CancellationToken token) where T : class
+    private async Task<T?> SendAsync<T>(string prefix, HttpMethod method, string path, object? body, CancellationToken token, Action<HttpResponseMessage>? responseReceived = null) where T : class
     {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
         deadline.CancelAfter(TimeSpan.FromSeconds(60));
-        try { return await SendCoreAsync<T>(prefix, method, path, body, deadline.Token).ConfigureAwait(false); }
+        try { return await SendCoreAsync<T>(prefix, method, path, body, deadline.Token, responseReceived).ConfigureAwait(false); }
         catch (OperationCanceledException exception) when (!token.IsCancellationRequested)
         { throw new HttpRequestException("Remote bridge timed out; publication remains pending.", exception); }
     }
 
-    private async Task<T?> SendCoreAsync<T>(string prefix, HttpMethod method, string path, object? body, CancellationToken token) where T : class
+    private async Task<T?> SendCoreAsync<T>(string prefix, HttpMethod method, string path, object? body, CancellationToken token, Action<HttpResponseMessage>? responseReceived) where T : class
     {
         using var request = new HttpRequestMessage(method, prefix + path);
         if (body is not null) request.Content = new StringContent(WireJson.Write(body), Encoding.UTF8, "application/json");
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
         if (response.StatusCode == HttpStatusCode.NoContent) return null;
         if (!response.IsSuccessStatusCode) throw new HttpRequestException($"Remote bridge returned HTTP {(int)response.StatusCode}. Check compatibility, scope, snapshot and lease.", null, response.StatusCode);
+        responseReceived?.Invoke(response);
         if (response.Content.Headers.ContentLength > 8 * 1024 * 1024) throw new InvalidDataException("Remote response exceeds the protocol limit.");
         await using var stream = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false);
         using var bytes = new MemoryStream();
@@ -169,4 +179,7 @@ public sealed class RemoteClient : IDisposable
         }
         return bytes.Length == 0 ? null : WireJson.Read<T>(Encoding.UTF8.GetString(bytes.ToArray()));
     }
+
+    private static bool SupportsServerVersion(string serverVersion)
+        => Version.TryParse(serverVersion, out var version) && version.Major == 12 && version.Minor is 1 or 2;
 }
