@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "introSkipper": {
     "repository": "https://github.com/GOvEy1nw/intro-skipper",
-    "reference": "fd6c91b73e0c61bc1c71301c0a8e04dcc0a07536",
+    "reference": "28a47c1d5efab57ce49f28fa13bff81eb2e2ce6c",
     "branch": "codex/scan-21-remote-analysis-nodes",
     "source": "plugin submodule",
     "releaseBaseline": "Jellyfin 12.2.0; integrated upstream 12.0 at 1bb2af7cbad551392490544029e38708e3cd6a0e."
