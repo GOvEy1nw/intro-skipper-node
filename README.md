@@ -19,6 +19,12 @@ dotnet test Standalone/tests/SegmentScanner.Tests/SegmentScanner.Tests.csproj -c
 python -m unittest Standalone/scripts/tests/test_export_plex_markers.py
 ```
 
+On Windows, also build the tray application:
+
+```powershell
+dotnet build Standalone/src/SegmentScanner.Desktop/SegmentScanner.Desktop.csproj -c Release -p:RestoreLockedMode=true -p:StandaloneBuild=true -p:SkipWebBuild=true
+```
+
 The node scans introductions, credits, recaps, previews and commercials. Credits can use the Original Intro Skipper or Text-aware method. The local settings page contains only connection details and Start/Stop; configure libraries, scan types, credits method, GPU, workers and path mappings centrally in the plugin's **Nodes** settings.
 
 No model weights, media, credentials, private packages or runtime bundles are included. Private all-in-one packaging requires builder-supplied model weights, manifest, FFmpeg/FFprobe and Python/OpenCV inputs.
