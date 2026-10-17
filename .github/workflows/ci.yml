@@ -20,6 +20,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install Jellyfin FFmpeg for media tests
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'jellyfin-ffmpeg.zip'
+          $destination = Join-Path $env:RUNNER_TEMP 'jellyfin-ffmpeg'
+          Invoke-WebRequest 'https://github.com/jellyfin/jellyfin-ffmpeg/releases/download/v8.1.3-1/jellyfin-ffmpeg_8.1.3-1_portable_win64-clang-gpl.zip' -OutFile $archive
+          Expand-Archive -LiteralPath $archive -DestinationPath $destination
+          $tools = (Get-ChildItem -LiteralPath $destination -Filter ffmpeg.exe -Recurse | Select-Object -First 1).DirectoryName
+          $tools >> $env:GITHUB_PATH
+          & "$tools/ffmpeg.exe" -version
+          & "$tools/ffprobe.exe" -version
       - run: dotnet restore Standalone/SegmentScanner.sln --locked-mode -p:StandaloneBuild=true
       - run: dotnet build Standalone/SegmentScanner.sln -c Release --no-restore -p:StandaloneBuild=true -p:SkipWebBuild=true
       - run: dotnet build Standalone/src/SegmentScanner.Desktop/SegmentScanner.Desktop.csproj -c Release -p:RestoreLockedMode=true -p:StandaloneBuild=true -p:SkipWebBuild=true
