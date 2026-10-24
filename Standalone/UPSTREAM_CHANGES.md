@@ -1,6 +1,6 @@
 # Changes from pinned Intro Skipper
 
-Plugin dependency: [`335ad052f06b4ec2a8a87d6c504bcc73d725ab14`](https://github.com/GOvEy1nw/intro-skipper/commit/335ad052f06b4ec2a8a87d6c504bcc73d725ab14), targeting Jellyfin `12.2.0`. This integrates upstream `12.0` at `1bb2af7cbad551392490544029e38708e3cd6a0e`. The `plugin/` submodule pins this source commit. Original plugin identity is retained; the bridge is an extension of this source fork. See `upstream-lock.json` for dependency identities.
+Plugin dependency: [`fca5e8f6893ccc9a1e9ee43313f822be3371f1c1`](https://github.com/GOvEy1nw/intro-skipper/commit/fca5e8f6893ccc9a1e9ee43313f822be3371f1c1), targeting Jellyfin `12.2.0`. This integrates stable upstream `12.0/v12.0.6.0` at `da3d8d50af3418ecd1ba80c58eefa48df5b5e2b4`. The `plugin/` submodule pins this source commit. Original plugin identity is retained; the bridge is an extension of this source fork. See `upstream-lock.json` for dependency identities.
 
 | Area | Change | Server behavior |
 | --- | --- | --- |

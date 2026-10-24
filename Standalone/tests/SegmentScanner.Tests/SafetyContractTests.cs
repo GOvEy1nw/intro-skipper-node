@@ -213,7 +213,8 @@ public sealed class SafetyContractTests : IDisposable
         var original = configuration with { Credits = configuration.Credits with { Method = CreditsDetectionMethod.IntroSkipper } };
         var originalHash = new CreditsDetector(original).ProfileHash();
         Assert.NotEqual(new CreditsDetector(configuration).ProfileHash(), originalHash);
-        Assert.Equal("fad06638becefb342a49be57b26bee98506c3ff17678cfb23a4bdd921463858b", originalHash);
+        // The 12.0.6.0 credits rules must invalidate the published original-credits v1 profile.
+        Assert.NotEqual("fad06638becefb342a49be57b26bee98506c3ff17678cfb23a4bdd921463858b", originalHash);
         Assert.Equal(originalHash, new CreditsDetector(original with { Credits = original.Credits with
         {
             InferenceBackend = CreditInferenceBackend.OpenClGpu, VideoDecoder = CreditVideoDecoder.NvidiaNvdec,

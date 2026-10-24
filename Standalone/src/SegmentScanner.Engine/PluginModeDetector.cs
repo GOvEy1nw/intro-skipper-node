@@ -138,7 +138,8 @@ public sealed class PluginModeDetector(WorkerConfiguration configuration)
                     {
                         AnalysisEnvironment = environment,
                     };
-                    await analyzer.AnalyzeItemsAsync(episodes.Values.ToArray(), upstreamMode, action, ffmpegValid, cancellationToken).ConfigureAwait(false);
+                    await analyzer.AnalyzeItemsAsync(episodes.Values.ToArray(), upstreamMode, action, ffmpegValid, cancellationToken,
+                        useLocalConsensus: job.UseLocalChromaprintConsensus, manualScan: job.ManualScan).ConfigureAwait(false);
 
                     var hasUnresolvedReference = !targets.All(item => item.IsMovie) && ordered.Any(item => !mediaByItem.ContainsKey(item.ItemId));
                     foreach (var item in targets)

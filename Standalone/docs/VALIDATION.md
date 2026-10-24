@@ -167,3 +167,7 @@ Real Edge interaction with an isolated bridge fixture verified the 2 default, na
 Jellyfin's current chapter API does not provide authorship provenance. Remote results that depend on unknown chapter input remain held for review. They cannot become automatically accepted solely because the model or audio matcher succeeded.
 
 No production installation, automatic model approval, live server write, commit, push, or release publication was performed.
+
+## 24 October 2026: upstream 12.0.6.0
+
+The paired plugin merge integrates stable upstream 12.0.6.0 and retains Jellyfin 12.2.0 as the minimum. Plugin tests passed 1,374/1,374, node tests 51/51, and dashboard tests 4/4. Both solutions compiled without warnings. Twelve-episode before/after intro timings were unchanged; combined credits retained eleven results, with one start moving approximately 0.248 seconds later. FFmpeg 7.1.3 comparisons and 8.1.3 runner checks completed without media failures. These are calibration regression checks; live server acceptance and GPU coverage were not performed. See the [full integration evidence](https://github.com/GOvEy1nw/intro-skipper/blob/fca5e8f6893ccc9a1e9ee43313f822be3371f1c1/docs/upstream-12.0.6.0-validation.md).

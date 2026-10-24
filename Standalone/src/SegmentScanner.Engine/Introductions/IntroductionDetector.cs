@@ -150,7 +150,7 @@ public sealed class IntroductionDetector
         var targets = queued.Where(episode => writeTargets.Any(item => item.ItemId == episode.EpisodeId)).ToList();
         var cache = CreateCacheService(environment);
         var ffmpeg = new FFmpegService(NullLogger<FFmpegService>.Instance, cache, null, null, environment);
-        var analyzer = new ChromaprintAnalyzer(NullLogger<ChromaprintAnalyzer>.Instance, ffmpeg, cache, null, configuration, environment);
+        var analyzer = new ChromaprintAnalyzer(NullLogger<ChromaprintAnalyzer>.Instance, ffmpeg, cache, null, configuration, environment, job.UseLocalChromaprintConsensus);
         var chapterAnalyzer = new ChapterAnalyzer(NullLogger<ChapterAnalyzer>.Instance, ffmpeg, null!, configuration, environment: environment);
         var adjustment = new TimeAdjustmentHelper(NullLogger.Instance, configuration, UpstreamAnalysisMode.Introduction, ffmpeg, environment);
         var results = new Dictionary<Guid, AnalysisResult>();

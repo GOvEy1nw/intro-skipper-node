@@ -29,8 +29,8 @@ public sealed class IntroSkipperCreditsDetector(WorkerConfiguration configuratio
 {
     private const string CpuDetectorId = "introskipper-credits-cpu-v1";
     private const string GpuDetectorId = "introskipper-credits-gpu-v1";
-    private const string CpuSemanticVersion = "introskipper-credits-cpu-v1";
-    private const string GpuSemanticVersion = "introskipper-credits-gpu-v1";
+    private const string CpuSemanticVersion = "introskipper-credits-cpu-v2";
+    private const string GpuSemanticVersion = "introskipper-credits-gpu-v2";
     private const string GpuDecoderPolicy = "keyframe-hardware-v1-av1-native-no-grain";
     private static readonly JsonSerializerOptions CreditsSettingsOptions = new(WireJson.Options)
     {
@@ -188,7 +188,7 @@ public sealed class IntroSkipperCreditsDetector(WorkerConfiguration configuratio
                 {
                     episodes[item.ItemId].SetAnalyzed(UpstreamAnalysisMode.Credits, EpisodeState.UserProvided);
                 }
-                var pass = new CreditsPass(NullLoggerFactory.Instance, ffmpeg, cache, database, pluginConfiguration, environment);
+                var pass = new CreditsPass(NullLoggerFactory.Instance, ffmpeg, cache, database, pluginConfiguration, environment, job.UseLocalChromaprintConsensus);
                 var seasonHasUnresolvedReference = !availableTargets.All(item => item.IsMovie) && ordered.Any(item => !mediaByItem.ContainsKey(item.ItemId));
 
                 try
