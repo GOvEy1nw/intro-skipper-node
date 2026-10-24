@@ -105,10 +105,16 @@ public sealed class SafetyContractTests : IDisposable
     }
 
     [Theory]
+    [InlineData(true, "12.0.0", true)]
+    [InlineData(true, "12.0.1", true)]
     [InlineData(true, "12.1.0", true)]
     [InlineData(true, "12.2.0", true)]
-    [InlineData(true, "12.3.0", false)]
-    [InlineData(false, "12.1.0", false)]
+    [InlineData(true, "12.3.0", true)]
+    [InlineData(true, "13.0.0", true)]
+    [InlineData(true, "11.0.0", false)]
+    [InlineData(true, "10.11.9", false)]
+    [InlineData(true, "invalid", false)]
+    [InlineData(false, "12.0.0", false)]
     public async Task RemoteHandshakeAuthenticatesWithoutLegacyTokenHeaders(bool validCredential, string serverVersion, bool supportedServer)
     {
         const string token = "local-handshake-test-key";

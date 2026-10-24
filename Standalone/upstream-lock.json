@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "introSkipper": {
     "repository": "https://github.com/GOvEy1nw/intro-skipper",
-    "reference": "fca5e8f6893ccc9a1e9ee43313f822be3371f1c1",
+    "reference": "f9080a7ee8d957869ea3f694254654876c3ded47",
     "branch": "codex/scan-21-remote-analysis-nodes",
     "source": "plugin submodule",
-    "releaseBaseline": "Intro Skipper 12.0.6.0; Jellyfin 12.2.0; upstream 12.0/v12.0.6.0 at da3d8d50af3418ecd1ba80c58eefa48df5b5e2b4."
+    "releaseBaseline": "Intro Skipper 12.0.6.0; Jellyfin 12.0.0 API baseline; upstream 12.0/v12.0.6.0 at da3d8d50af3418ecd1ba80c58eefa48df5b5e2b4."
   },
   "runtime": {
     "dotnetSdk": "10.0.303",

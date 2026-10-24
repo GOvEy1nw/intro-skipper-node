@@ -161,7 +161,7 @@ Real Edge interaction with an isolated bridge fixture verified the 2 default, na
 
 - Confirm/correct real-media boundaries and evaluate a representative held-out corpus, including ordinary text, subtitle, slate, animation, multiple-credit-block, and no-credit cases.
 - Establish the model's source and redistribution licence. Its SHA-256 is `9b486f3c3eee77b4c8cc91a83892c37026cca7d29b79bf3b93772ccd2db58454`; its current manifest is experimental and unapproved.
-- Install the matching upstream-integrated bridge on an isolated Jellyfin 12.2.0 instance, then verify authentication, claim/heartbeat/import, canonical export, projection and restart recovery. The earlier 12.1 trial is historical evidence for its matching build.
+- Install the matching upstream-integrated bridge on an isolated Jellyfin 12.0 or newer instance, then verify authentication, claim/heartbeat/import, canonical export, projection and restart recovery. The earlier 12.1 trial is historical evidence for its matching build.
 - Verify Windows Scheduled Task installation and unattended access under the intended account, or validate the intended Linux mounts and permissions.
 
 Jellyfin's current chapter API does not provide authorship provenance. Remote results that depend on unknown chapter input remain held for review. They cannot become automatically accepted solely because the model or audio matcher succeeded.
@@ -170,4 +170,10 @@ No production installation, automatic model approval, live server write, commit,
 
 ## 24 October 2026: upstream 12.0.6.0
 
-The paired plugin merge integrates stable upstream 12.0.6.0 and retains Jellyfin 12.2.0 as the minimum. Plugin tests passed 1,374/1,374, node tests 51/51, and dashboard tests 4/4. Both solutions compiled without warnings. Twelve-episode before/after intro timings were unchanged; combined credits retained eleven results, with one start moving approximately 0.248 seconds later. FFmpeg 7.1.3 comparisons and 8.1.3 runner checks completed without media failures. These are calibration regression checks; live server acceptance and GPU coverage were not performed. See the [full integration evidence](https://github.com/GOvEy1nw/intro-skipper/blob/fca5e8f6893ccc9a1e9ee43313f822be3371f1c1/docs/upstream-12.0.6.0-validation.md).
+The paired plugin merge integrates stable upstream 12.0.6.0 and initially used the upstream Jellyfin 12.2.0 dependency target; the compatibility correction below restores the supported 12.0.0 baseline. Plugin tests passed 1,374/1,374, node tests 51/51, and dashboard tests 4/4. Both solutions compiled without warnings. Twelve-episode before/after intro timings were unchanged; combined credits retained eleven results, with one start moving approximately 0.248 seconds later. FFmpeg 7.1.3 comparisons and 8.1.3 runner checks completed without media failures. These are calibration regression checks; live server acceptance and GPU coverage were not performed. See the [full integration evidence](https://github.com/GOvEy1nw/intro-skipper/blob/fca5e8f6893ccc9a1e9ee43313f822be3371f1c1/docs/upstream-12.0.6.0-validation.md).
+
+### Jellyfin 12.0+ compatibility correction
+
+The plugin now compiles against Jellyfin Controller/Model 12.0.0 with unchanged EF Core 10.0.11 and UTF.Unknown 2.7.0 pins. The same DLL resolved all 858 plugin types and created its service registrator under isolated 12.0.0, 12.1.0 and 12.2.0 hosts. Node capability checks accept 12.0 and newer instead of enumerating 12.1/12.2. These are isolated compatibility checks, not a live installation.
+
+After the correction, plugin tests passed 1,374/1,374 and node tests passed 57/57, with no skipped tests.

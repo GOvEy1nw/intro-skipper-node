@@ -52,7 +52,7 @@ public sealed class RemoteClient : IDisposable
                 && values.Any(value => string.Equals(value, "1", StringComparison.Ordinal))).ConfigureAwait(false)
             ?? throw new InvalidDataException("Missing remote bridge capabilities.");
         if (capabilities.ProtocolVersion != 3 || !capabilities.SupportsNodeConfiguration || capabilities.AnalysisContract != "segment-scanner-v1" || !SupportsServerVersion(capabilities.ServerVersion))
-            throw new InvalidDataException("Install the matching node-configuration bridge and worker; this version requires remote protocol 3 on Jellyfin 12.1 or 12.2.");
+            throw new InvalidDataException("Install the matching node-configuration bridge and worker; this version requires remote protocol 3 on Jellyfin 12.0 or newer.");
         return capabilities;
     }
 
@@ -181,5 +181,5 @@ public sealed class RemoteClient : IDisposable
     }
 
     private static bool SupportsServerVersion(string serverVersion)
-        => Version.TryParse(serverVersion, out var version) && version.Major == 12 && version.Minor is 1 or 2;
+        => Version.TryParse(serverVersion, out var version) && version.Major >= 12;
 }
